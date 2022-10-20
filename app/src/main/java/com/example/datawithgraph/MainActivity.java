@@ -8,9 +8,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
-import android.text.format.DateFormat;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -20,21 +19,21 @@ import com.jjoe64.graphview.Viewport;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.sql.SQLOutput;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView txt_currentAccel, txt_prevAccel, txt_Accel;
+    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX;
     ProgressBar prog_shakeMeter;
 
     //sensor variables
     private  SensorManager mSensorManager;
-    private  Sensor mAccelerometer;
-    private  Sensor mGyro;
-    private  Sensor mMagnetometer;
+    private  Sensor mAccelerometer;         //Mide en m/s 2 la fuerza de aceleración que se aplica a un dispositivo en los tres ejes físicos (x, y, z), incluida la fuerza de gravedad.
+    private  Sensor mGyro;                  //Mide en rad/s la velocidad de rotación de un dispositivo alrededor de cada uno de los tres ejes físicos (x, y, z).
+    private  Sensor mMagnetometer;          //Mide el campo geomagnético ambiental de los tres ejes físicos (x, y, z) en μT.
 
     private double accelerationCurrentValue;
     private double accelerationPreviousValue;
@@ -43,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private int graphIntervalCounter = 0;
 
     private Viewport viewport;
+
+    private String accel_Data, gyro_Data, mag_Data;
 
 
 
@@ -65,26 +66,36 @@ public class MainActivity extends AppCompatActivity {
             String date = formatter.format(cal.getTime());
 
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-
                 float[] gyro = event.values;
-                System.out.println(date + "gyro x = " + gyro[0]);
-                System.out.println(date + "gyro y = " + gyro[1]);
-                System.out.println(date + "gyro z = " + gyro[2]);
+//                System.out.println(date + "gyro x = " + gyro[0]);
+//                System.out.println(date + "gyro y = " + gyro[1]);
+//                System.out.println(date + "gyro z = " + gyro[2]);
+
+                txt_GyroX.setText("x = " + (int)gyro[0]);
+                txt_GyroY.setText("y = " + (int)gyro[1]);
+                txt_GyroZ.setText("z = " + (int)gyro[2]);
             }
 
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
                 float[] accel = event.values;
-                System.out.println(date + "accel x = " + accel[0]);
-                System.out.println(date + "accel y = " + accel[1]);
-                System.out.println(date + "accel z = " + accel[2]);
+//                System.out.println(date + "accel y = " + accel[1]);
+//                System.out.println(date + "accel x = " + accel[0]);
+//                System.out.println(date + "accel z = " + accel[2]);
 
+                txt_AccelX.setText("x = " + (int)accel[0]);
+                txt_AccelY.setText("y = " + (int)accel[1]);
+                txt_AccelZ.setText("z = " + (int)accel[2]);
             }
 
             if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD){
                 float[] magnetic = event.values;
-                System.out.println(date + "mag x = " + magnetic[0]);
-                System.out.println(date + "mag y = " + magnetic[1]);
-                System.out.println(date + "mag z = " + magnetic[2]);
+//                System.out.println(date + "mag x = " + magnetic[0]);
+//                System.out.println(date + "mag y = " + magnetic[1]);
+//                System.out.println(date + "mag z = " + magnetic[2]);
+
+                txt_MagX.setText("x = " + (int)magnetic[0]);
+                txt_MagY.setText("y = " + (int)magnetic[1]);
+                txt_MagZ.setText("z = " + (int)magnetic[2]);
 
             }
 
@@ -125,11 +136,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txt_currentAccel = findViewById(R.id.txt_currentAccel);
-        txt_prevAccel = findViewById(R.id.txt_prevAccel);
-        txt_Accel = findViewById(R.id.txt_Accel);
+        txt_AccelZ = findViewById(R.id.txt_AccelZ);
+        txt_AccelY = findViewById(R.id.txt_AccelY);
+        txt_AccelX = findViewById(R.id.txt_AccelX);
 
-        prog_shakeMeter = findViewById(R.id.prog_shakeMeter);
+        txt_GyroZ = findViewById(R.id.txt_GyroZ);
+        txt_GyroY = findViewById(R.id.txt_GyroY);
+        txt_GyroX = findViewById(R.id.txt_GyroX);
+
+        txt_MagX = findViewById(R.id.txt_MagX);
+        txt_MagY = findViewById(R.id.txt_MagY);
+        txt_MagZ = findViewById(R.id.txt_MagZ);
+
 
         //initialize sensor data
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -137,12 +155,21 @@ public class MainActivity extends AppCompatActivity {
         mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            accel_Data = "ACCELEROMETRO " + mAccelerometer.getName() + " RANGO MAX: " + mAccelerometer.getMaximumRange () + " RESOLUTION: " + mAccelerometer.getResolution()  + " VENDOR " + mAccelerometer.getVendor() ;
+            gyro_Data = "GIROSCOPIO " + mGyro.getName() + " RANGO MAX: " + mGyro.getMaximumRange() + " RESOLUTION: " + mGyro.getResolution()  + " VENDOR " + mGyro.getVendor() ;
+            mag_Data = "MAGNETOMETRO " + mMagnetometer.getName() + " RANGO MAX: " + mMagnetometer.getMaximumRange () + " RESOLUTION: " + mMagnetometer.getResolution()  + " VENDOR " + mMagnetometer.getVendor();
+        }
+
+        System.out.println(accel_Data);
+        System.out.println(gyro_Data);
+        System.out.println(mag_Data);
         //sample graph code
-        GraphView graph = (GraphView) findViewById(R.id.graph);
-        viewport = graph.getViewport();
-        viewport.setScrollable(true);
-        viewport.setXAxisBoundsManual(true);
-        graph.addSeries(series);
+//        GraphView graph = (GraphView) findViewById(R.id.graph);
+//        viewport = graph.getViewport();
+//        viewport.setScrollable(true);
+//        viewport.setXAxisBoundsManual(true);
+//        graph.addSeries(series);
 
     }
     protected void onResume() {
