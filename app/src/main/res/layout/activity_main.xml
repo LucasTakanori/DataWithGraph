@@ -131,6 +131,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/txt_MagY" />
 
+    <Button
+        android:id="@+id/button_Record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/txt_MagY" />
+
     <!--    <com.jjoe64.graphview.GraphView-->
     <!--        android:id="@+id/graph"-->
     <!--        android:layout_width="match_parent"-->
