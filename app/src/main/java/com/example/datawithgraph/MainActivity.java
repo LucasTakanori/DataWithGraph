@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     JSONArray dataGyro, dataAccel, dataMag;
 
 
-    boolean chupapingaschupapollas = false;
+    boolean recordMode = false;
 
     LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[] {
             new DataPoint(0, 1),
@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private  SensorEventListener sensorEventListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
-            if(!chupapingaschupapollas) return;
+            if(!recordMode) return;
             cal.setTimeInMillis(currentTimeMillis ());
             String date = formatter.format(cal.getTime());
             JSONObject data = new JSONObject();
@@ -249,9 +249,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         if(view.getId() == R.id.button_Record){
-            if(chupapingaschupapollas){
+            if(this.recordMode){
                 JSONObject finalObject = new JSONObject();
                 try {
+//                    finalObject.put("accel specs",accel_Data);
+//                    finalObject.put("gyro specs",gyro_Data);
+//                    finalObject.put("mag specs",mag_Data);
                     finalObject.put("accel",dataAccel);
                     finalObject.put("gyro",dataGyro);
                     finalObject.put("mag",dataMag);
@@ -263,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     e.printStackTrace();
                 }
             }
-            this.chupapingaschupapollas = !this.chupapingaschupapollas;
+            this.recordMode = !this.recordMode;
 
         }
     }
