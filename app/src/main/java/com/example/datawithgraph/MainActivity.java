@@ -1,6 +1,7 @@
 package com.example.datawithgraph;
 
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.setOut;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -33,13 +34,16 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX;
-    ProgressBar prog_shakeMeter;
 
     //sensor variables
     private  SensorManager mSensorManager;
     private  Sensor mAccelerometer;         //Mide en m/s 2 la fuerza de aceleración que se aplica a un dispositivo en los tres ejes físicos (x, y, z), incluida la fuerza de gravedad.
     private  Sensor mGyro;                  //Mide en rad/s la velocidad de rotación de un dispositivo alrededor de cada uno de los tres ejes físicos (x, y, z).
     private  Sensor mMagnetometer;          //Mide el campo geomagnético ambiental de los tres ejes físicos (x, y, z) en μT.
+    private  Sensor mRotation;              //Mide la orientación de un dispositivo mediante los tres elementos del vector de rotación del dispositivo.
+                                            //USAR Note: This sensor type exists for legacy reasons, please use rotation vector sensor type and getRotationMatrix()
+                                            // in conjunction with remapCoordinateSystem() and getOrientation() to compute these values instead.
+    private  Sensor mOrientation;
 
     private double accelerationCurrentValue;
     private double accelerationPreviousValue;
@@ -50,9 +54,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Viewport viewport;
 
-    private String accel_Data, gyro_Data, mag_Data;
+    private String accel_Data, gyro_Data, mag_Data, rot_data, orientation_data;
 
-    JSONArray dataGyro, dataAccel, dataMag;
+    JSONArray dataGyro, dataAccel, dataMag, dataRot, dataOrientation;
 
 
     boolean recordMode = false;
@@ -143,6 +147,51 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
 
+            if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
+                float[] rotVector = event.values;
+                System.out.println(date + "x*sin(θ/2) = " + rotVector[0]);
+                System.out.println(date + "y*sin(θ/2) = " + rotVector[1]);
+                System.out.println(date + "z*sin(θ/2) = " + rotVector[2]);
+                System.out.println(date + "cos(θ/2) = " + rotVector[3]);
+                System.out.println(date + "estimated heading Accuracy " + rotVector[4]);
+
+//                txt_MagX.setText("x = " + df.format(orientation[0]));
+//                txt_MagY.setText("y = " + df.format(orientation[1]));
+//                txt_MagZ.setText("z = " + df.format(orientation[2]));
+
+                try {
+                    data.put("x*sin(θ/2) = ", rotVector[0]);
+                    data.put("y*sin(θ/2) = ", rotVector[1]);
+                    data.put("z*sin(θ/2) = ", rotVector[2]);
+                    data.put("cos(θ/2) = ", rotVector[3]);
+                    data.put("estimated heading Accuracy " , rotVector[4]);
+                    data.put("timeStamp",  cal.getTimeInMillis());
+                    dataRot.put(data);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (event.sensor.getType() == Sensor.TYPE_ORIENTATION){
+                float[] orientation = event.values;
+                System.out.println(date + "Azimuth = " + orientation[0]);
+                System.out.println(date + "Pitch  = " + orientation[1]);
+                System.out.println(date + "Roll = " + orientation[2]);
+
+//                txt_MagX.setText("x = " + df.format(orientation[0]));
+//                txt_MagY.setText("y = " + df.format(orientation[1]));
+//                txt_MagZ.setText("z = " + df.format(orientation[2]));
+
+                try {
+                    data.put("Azimuth = ", orientation[0]);
+                    data.put("Pitch  = ", orientation[1]);
+                    data.put("Roll = ", orientation[2]);
+                    data.put("timeStamp",  cal.getTimeInMillis());
+                    dataOrientation.put(data);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
 //            float x = event.values[0];
 //            float y = event.values[1];
 //            float z = event.values[2];
@@ -206,20 +255,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        mRotation = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             accel_Data = "ACCELEROMETRO " + mAccelerometer.getName() + " RANGO MAX: " + mAccelerometer.getMaximumRange () + " RESOLUTION: " + mAccelerometer.getResolution()  + " VENDOR " + mAccelerometer.getVendor() ;
             gyro_Data = "GIROSCOPIO " + mGyro.getName() + " RANGO MAX: " + mGyro.getMaximumRange() + " RESOLUTION: " + mGyro.getResolution()  + " VENDOR " + mGyro.getVendor() ;
             mag_Data = "MAGNETOMETRO " + mMagnetometer.getName() + " RANGO MAX: " + mMagnetometer.getMaximumRange () + " RESOLUTION: " + mMagnetometer.getResolution()  + " VENDOR " + mMagnetometer.getVendor();
+            rot_data = "ROTATION VECTOR " + mRotation.getName() + " RANGO MAX: " + mRotation.getMaximumRange () + " RESOLUTION: " + mRotation.getResolution()  + " VENDOR " + mRotation.getVendor() ;
+            orientation_data = "ORIENTATION " + mOrientation.getName() + " RANGO MAX: " + mOrientation.getMaximumRange () + " RESOLUTION: " + mOrientation.getResolution()  + " VENDOR " + mOrientation.getVendor() ;
         }
 
         System.out.println(accel_Data);
         System.out.println(gyro_Data);
         System.out.println(mag_Data);
+        System.out.println(rot_data);
+        System.out.println(orientation_data);
 
         dataGyro = new JSONArray();
         dataAccel = new JSONArray();
         dataMag = new JSONArray();
+        dataOrientation = new JSONArray();
+        dataRot = new JSONArray();
+
         Context context = getApplicationContext();
         path = context.getFilesDir().getAbsolutePath();
 
@@ -235,9 +293,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(sensorEventListener, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        mSensorManager.registerListener(sensorEventListener, mGyro, SensorManager.SENSOR_DELAY_NORMAL);
-        mSensorManager.registerListener(sensorEventListener, mMagnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(sensorEventListener, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(sensorEventListener, mGyro, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(sensorEventListener, mMagnetometer, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(sensorEventListener, mRotation, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(sensorEventListener, mOrientation, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     protected void onPause() {
@@ -258,10 +318,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     finalObject.put("accel",dataAccel);
                     finalObject.put("gyro",dataGyro);
                     finalObject.put("mag",dataMag);
+                    finalObject.put("rot",dataRot);
+                    finalObject.put("orientation",dataOrientation);
                     JsonManagement.test(path,cal.getTime().toString().replaceAll(" ",""), finalObject);
                     dataAccel = new JSONArray();
                     dataGyro = new JSONArray();
                     dataMag = new JSONArray();
+                    dataRot = new JSONArray();
+                    dataOrientation = new JSONArray();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
