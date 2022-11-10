@@ -33,7 +33,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX;
+    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX, txt_Azimuth, txt_Pitch, txt_Roll, txt_Yaw, txt_Pitch2, txt_Roll2;
 
     //sensor variables
     private  SensorManager mSensorManager;
@@ -44,6 +44,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             //USAR Note: This sensor type exists for legacy reasons, please use rotation vector sensor type and getRotationMatrix()
                                             // in conjunction with remapCoordinateSystem() and getOrientation() to compute these values instead.
     private  Sensor mOrientation;
+
+
+    private float[] rMatrix = new float[9];
+    private float[] rotVecDeg = new float[9];
 
     private double accelerationCurrentValue;
     private double accelerationPreviousValue;
@@ -56,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private String accel_Data, gyro_Data, mag_Data, rot_data, orientation_data;
 
-    JSONArray dataGyro, dataAccel, dataMag, dataRot, dataOrientation;
+    JSONArray dataGyro, dataAccel, dataMag, dataRot, dataOrientation, dataRotDeg;
 
 
     boolean recordMode = false;
@@ -83,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cal.setTimeInMillis(currentTimeMillis ());
             String date = formatter.format(cal.getTime());
             JSONObject data = new JSONObject();
+            JSONObject data1 = new JSONObject();
 
 
             if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
@@ -91,9 +96,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "gyro y = " + gyro[1]);
                 System.out.println(date + "gyro z = " + gyro[2]);
 
-                txt_GyroX.setText("x = " + df.format(gyro[0]));
+/*                txt_GyroX.setText("x = " + df.format(gyro[0]));
                 txt_GyroY.setText("y = " + df.format(gyro[1]));
-                txt_GyroZ.setText("z = " + df.format(gyro[2]));
+                txt_GyroZ.setText("z = " + df.format(gyro[2]));*/
 
                 try {
                     data.put("x", gyro[0]);
@@ -112,9 +117,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "accel y = " + accel[1]);
                 System.out.println(date + "accel z = " + accel[2]);
 
-                txt_AccelX.setText("x = " + df.format(accel[0]));
+/*                txt_AccelX.setText("x = " + df.format(accel[0]));
                 txt_AccelY.setText("y = " + df.format(accel[1]));
-                txt_AccelZ.setText("z = " + df.format(accel[2]));
+                txt_AccelZ.setText("z = " + df.format(accel[2]));*/
 
                 try {
                     data.put("x", accel[0]);
@@ -133,9 +138,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "mag y = " + magnetic[1]);
                 System.out.println(date + "mag z = " + magnetic[2]);
 
-                txt_MagX.setText("x = " + df.format(magnetic[0]));
+/*                txt_MagX.setText("x = " + df.format(magnetic[0]));
                 txt_MagY.setText("y = " + df.format(magnetic[1]));
-                txt_MagZ.setText("z = " + df.format(magnetic[2]));
+                txt_MagZ.setText("z = " + df.format(magnetic[2]));*/
                 try {
                     data.put("x", magnetic[0]);
                     data.put("y", magnetic[1]);
@@ -155,9 +160,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "cos(θ/2) = " + rotVector[3]);
                 System.out.println(date + "estimated heading Accuracy " + rotVector[4]);
 
-//                txt_MagX.setText("x = " + df.format(orientation[0]));
-//                txt_MagY.setText("y = " + df.format(orientation[1]));
-//                txt_MagZ.setText("z = " + df.format(orientation[2]));
+
+
+                calculateAngles(rotVecDeg, rotVector);
+                System.out.println(date + "Yaw = " + rotVecDeg[0]);
+                System.out.println(date + "Roll = " + rotVecDeg[1]);
+                System.out.println(date + "Pitch = " + rotVecDeg[2]);
+
+                txt_Yaw.setText("Yaw = " + df.format(rotVecDeg[0]));
+                txt_Roll2.setText("Pitch = " + df.format(rotVecDeg[1]));
+                txt_Pitch2.setText("Roll = " + df.format(rotVecDeg[2]));
 
                 try {
                     data.put("x*sin(θ/2) = ", rotVector[0]);
@@ -170,6 +182,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+                try {
+                    data1.put("yaw", rotVecDeg[0]);
+                    data1.put("roll", rotVecDeg[1]);
+                    data1.put("pitch", rotVecDeg[2]);
+                    data1.put("timeStamp",  cal.getTimeInMillis());
+                    dataRotDeg.put(data1);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
             }
 
             if (event.sensor.getType() == Sensor.TYPE_ORIENTATION){
@@ -178,9 +200,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "Pitch  = " + orientation[1]);
                 System.out.println(date + "Roll = " + orientation[2]);
 
-//                txt_MagX.setText("x = " + df.format(orientation[0]));
-//                txt_MagY.setText("y = " + df.format(orientation[1]));
-//                txt_MagZ.setText("z = " + df.format(orientation[2]));
+/*                txt_Azimuth.setText("Azimuth = " + df.format(orientation[0]));
+                txt_Pitch.setText("Pitch = " + df.format(orientation[1]));
+                txt_Roll.setText("Roll = " + df.format(orientation[2]));*/
 
                 try {
                     data.put("Azimuth = ", orientation[0]);
@@ -192,6 +214,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     e.printStackTrace();
                 }
             }
+
+
 //            float x = event.values[0];
 //            float y = event.values[1];
 //            float z = event.values[2];
@@ -236,19 +260,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         findViewById(R.id.button_Record).setOnClickListener(this);
 
+//
+//        txt_AccelZ = findViewById(R.id.txt_AccelZ);
+//        txt_AccelY = findViewById(R.id.txt_AccelY);
+//        txt_AccelX = findViewById(R.id.txt_AccelX);
+//
+//        txt_GyroZ = findViewById(R.id.txt_GyroZ);
+//        txt_GyroY = findViewById(R.id.txt_GyroY);
+//        txt_GyroX = findViewById(R.id.txt_GyroX);
+//
+//        txt_MagX = findViewById(R.id.txt_MagX);
+//        txt_MagY = findViewById(R.id.txt_MagY);
+//        txt_MagZ = findViewById(R.id.txt_MagZ);
+//
+//        txt_Azimuth = findViewById(R.id.txt_Azimuth);
+//        txt_Pitch = findViewById(R.id.txt_Pitch);
+//        txt_Roll = findViewById(R.id.txt_Roll);
 
-        txt_AccelZ = findViewById(R.id.txt_AccelZ);
-        txt_AccelY = findViewById(R.id.txt_AccelY);
-        txt_AccelX = findViewById(R.id.txt_AccelX);
-
-        txt_GyroZ = findViewById(R.id.txt_GyroZ);
-        txt_GyroY = findViewById(R.id.txt_GyroY);
-        txt_GyroX = findViewById(R.id.txt_GyroX);
-
-        txt_MagX = findViewById(R.id.txt_MagX);
-        txt_MagY = findViewById(R.id.txt_MagY);
-        txt_MagZ = findViewById(R.id.txt_MagZ);
-
+        txt_Yaw = findViewById(R.id.txt_Yaw);
+        txt_Pitch2 = findViewById(R.id.txt_Pitch2);
+        txt_Roll2 = findViewById(R.id.txt_Roll2);
 
         //initialize sensor data
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -277,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dataMag = new JSONArray();
         dataOrientation = new JSONArray();
         dataRot = new JSONArray();
+        dataRotDeg = new JSONArray();
 
         Context context = getApplicationContext();
         path = context.getFilesDir().getAbsolutePath();
@@ -319,12 +351,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     finalObject.put("gyro",dataGyro);
                     finalObject.put("mag",dataMag);
                     finalObject.put("rot",dataRot);
+                    finalObject.put("rotDeg",dataRotDeg);
                     finalObject.put("orientation",dataOrientation);
+
                     JsonManagement.test(path,cal.getTime().toString().replaceAll(" ",""), finalObject);
+
                     dataAccel = new JSONArray();
                     dataGyro = new JSONArray();
                     dataMag = new JSONArray();
                     dataRot = new JSONArray();
+                    dataRotDeg = new JSONArray();
                     dataOrientation = new JSONArray();
 
                 } catch (Exception e) {
@@ -333,6 +369,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             this.recordMode = !this.recordMode;
 
+        }
+    }
+    /**
+     * @param result the array of Euler angles in the order: yaw, roll, pitch
+     * @param rotVector the rotation vector
+     */
+    public void calculateAngles(float[] result, float[] rotVector){
+        //caculate rotation matrix from rotation vector first
+        SensorManager.getRotationMatrixFromVector(rMatrix, rotVector);
+
+        //calculate Euler angles now
+        SensorManager.getOrientation(rMatrix, result);
+
+        //The results are in radians, need to convert it to degrees
+        convertToDegrees(result);
+    }
+
+    private void convertToDegrees(float[] vector){
+        for (int i = 0; i < vector.length; i++){
+            vector[i] = (float) Math.toDegrees(vector[i]);
         }
     }
 }
