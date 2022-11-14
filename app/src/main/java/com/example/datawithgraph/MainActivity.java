@@ -31,19 +31,19 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX, txt_Azimuth, txt_Pitch, txt_Roll, txt_Yaw, txt_Pitch2, txt_Roll2;
+    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX, txt_Azimuth, txt_Pitch, txt_Roll, txt_Yaw, txt_Pitch2, txt_Roll2 , txt_Display;
 
     //sensor variables
-    private  SensorManager mSensorManager;
-    private  Sensor mAccelerometer;         //Mide en m/s 2 la fuerza de aceleración que se aplica a un dispositivo en los tres ejes físicos (x, y, z), incluida la fuerza de gravedad.
-    private  Sensor mGyro;                  //Mide en rad/s la velocidad de rotación de un dispositivo alrededor de cada uno de los tres ejes físicos (x, y, z).
-    private  Sensor mMagnetometer;          //Mide el campo geomagnético ambiental de los tres ejes físicos (x, y, z) en μT.
-    private  Sensor mRotation;              //Mide la orientación de un dispositivo mediante los tres elementos del vector de rotación del dispositivo.
-                                            //USAR Note: This sensor type exists for legacy reasons, please use rotation vector sensor type and getRotationMatrix()
-                                            // in conjunction with remapCoordinateSystem() and getOrientation() to compute these values instead.
-    private  Sensor mOrientation;
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;         //Mide en m/s 2 la fuerza de aceleración que se aplica a un dispositivo en los tres ejes físicos (x, y, z), incluida la fuerza de gravedad.
+    private Sensor mGyro;                  //Mide en rad/s la velocidad de rotación de un dispositivo alrededor de cada uno de los tres ejes físicos (x, y, z).
+    private Sensor mMagnetometer;          //Mide el campo geomagnético ambiental de los tres ejes físicos (x, y, z) en μT.
+    private Sensor mRotation;              //Mide la orientación de un dispositivo mediante los tres elementos del vector de rotación del dispositivo.
+    //USAR Note: This sensor type exists for legacy reasons, please use rotation vector sensor type and getRotationMatrix()
+    // in conjunction with remapCoordinateSystem() and getOrientation() to compute these values instead.
+    private Sensor mOrientation;
 
 
     private float[] rMatrix = new float[9];
@@ -60,12 +60,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private String accel_Data, gyro_Data, mag_Data, rot_data, orientation_data;
 
+    private float display = 0, act = 0, prev = -1;
+
+
     JSONArray dataGyro, dataAccel, dataMag, dataRot, dataOrientation, dataRotDeg;
 
 
     boolean recordMode = false;
 
-    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[] {
+    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[]{
             new DataPoint(0, 1),
             new DataPoint(1, 5),
             new DataPoint(2, 3),
@@ -73,18 +76,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             new DataPoint(4, 6)
     });
 
-    int i=0;
+    int i = 0;
 
     private Calendar cal = Calendar.getInstance(Locale.ENGLISH);
     private String dateFormat = "yyyy-MM-dd HH:mm:ss.SSS ";
     private SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
     private static final DecimalFormat df = new DecimalFormat("0.00");
 
-    private  SensorEventListener sensorEventListener = new SensorEventListener() {
+    private SensorEventListener sensorEventListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
-            if(!recordMode) return;
-            cal.setTimeInMillis(currentTimeMillis ());
+            if (!recordMode) return;
+            cal.setTimeInMillis(currentTimeMillis());
             String date = formatter.format(cal.getTime());
             //JSONObject data = new JSONObject();
             JSONObject data1 = new JSONObject();
@@ -100,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 txt_GyroY.setText("y = " + df.format(gyro[1]));
                 txt_GyroZ.setText("z = " + df.format(gyro[2]));*//*
 
-                *//*try {
+             *//*try {
                     data.put("x", gyro[0]);
                     data.put("y", gyro[1]);
                     data.put("z", gyro[2]);
@@ -152,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }*/
 
-            if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
+            if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
                 float[] rotVector = event.values;
                 /*System.out.println(date + "x*sin(θ/2) = " + rotVector[0]);
                 System.out.println(date + "y*sin(θ/2) = " + rotVector[1]);
@@ -161,15 +164,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "estimated heading Accuracy " + rotVector[4]);*/
 
 
-
                 calculateAngles(rotVecDeg, rotVector);
                 System.out.println(date + "Yaw = " + rotVecDeg[0]);
-                System.out.println(date + "Roll = " + rotVecDeg[1]);
-                System.out.println(date + "Pitch = " + rotVecDeg[2]);
+                //System.out.println(date + "Roll = " + rotVecDeg[1]);
+                //System.out.println(date + "Pitch = " + rotVecDeg[2]);
+
+
+                act = rotVecDeg[0] + 180;
+
+                if (prev == -1) prev = act;
+                System.out.println("act : " + act);
+                System.out.println("prev : " + prev);
+
+
+                if (prev < 5 && act > 355) {
+                    display -= 360 - act + prev;
+                } else if (prev > 355 && act < 5) {
+                    display += 360 - prev + act;
+                } else {
+                    display += act - prev;
+                }
+                System.out.println("display : " + display);
+
+                prev = act;
 
                 txt_Yaw.setText("Yaw = " + df.format(rotVecDeg[0]));
                 txt_Roll2.setText("Pitch = " + df.format(rotVecDeg[1]));
                 txt_Pitch2.setText("Roll = " + df.format(rotVecDeg[2]));
+                txt_Display.setText("Delta = " + df.format(display));
 
                 /*try {
                     data.put("x*sin(θ/2) = ", rotVector[0]);
@@ -186,7 +208,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     data1.put("yaw", rotVecDeg[0]);
                     data1.put("roll", rotVecDeg[1]);
                     data1.put("pitch", rotVecDeg[2]);
-                    data1.put("timeStamp",  cal.getTimeInMillis());
+                    data1.put("delta", display);
+                    data1.put("timeStamp", cal.getTimeInMillis());
                     dataRotDeg.put(data1);
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -242,6 +265,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //            viewport.setMaxX(pointsPlotted);
 //            viewport.setMinX(pointsPlotted-200);
         }
+
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
@@ -280,20 +304,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         txt_Yaw = findViewById(R.id.txt_Yaw);
         txt_Pitch2 = findViewById(R.id.txt_Pitch2);
         txt_Roll2 = findViewById(R.id.txt_Roll2);
+        txt_Display = findViewById(R.id.txt_Display);
 
         //initialize sensor data
-        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         //mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         //mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         //mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mRotation = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         //mOrientation = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             //accel_Data = "ACCELEROMETRO " + mAccelerometer.getName() + " RANGO MAX: " + mAccelerometer.getMaximumRange () + " RESOLUTION: " + mAccelerometer.getResolution()  + " VENDOR " + mAccelerometer.getVendor() ;
             //gyro_Data = "GIROSCOPIO " + mGyro.getName() + " RANGO MAX: " + mGyro.getMaximumRange() + " RESOLUTION: " + mGyro.getResolution()  + " VENDOR " + mGyro.getVendor() ;
             //mag_Data = "MAGNETOMETRO " + mMagnetometer.getName() + " RANGO MAX: " + mMagnetometer.getMaximumRange () + " RESOLUTION: " + mMagnetometer.getResolution()  + " VENDOR " + mMagnetometer.getVendor();
-            rot_data = "ROTATION VECTOR " + mRotation.getName() + " RANGO MAX: " + mRotation.getMaximumRange () + " RESOLUTION: " + mRotation.getResolution()  + " VENDOR " + mRotation.getVendor() ;
+            rot_data = "ROTATION VECTOR " + mRotation.getName() + " RANGO MAX: " + mRotation.getMaximumRange() + " RESOLUTION: " + mRotation.getResolution() + " VENDOR " + mRotation.getVendor();
             //orientation_data = "ORIENTATION " + mOrientation.getName() + " RANGO MAX: " + mOrientation.getMaximumRange () + " RESOLUTION: " + mOrientation.getResolution()  + " VENDOR " + mOrientation.getVendor() ;
         }
 
@@ -314,7 +339,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         path = context.getFilesDir().getAbsolutePath();
 
 
-
         //sample graph code
 //        GraphView graph = (GraphView) findViewById(R.id.graph);
 //        viewport = graph.getViewport();
@@ -323,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        graph.addSeries(series);
 
     }
+
     protected void onResume() {
         super.onResume();
         //mSensorManager.registerListener(sensorEventListener, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
@@ -340,8 +365,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View view) {
-        if(view.getId() == R.id.button_Record){
-            if(this.recordMode){
+        if (view.getId() == R.id.button_Record) {
+            if (this.recordMode) {
                 JSONObject finalObject = new JSONObject();
                 try {
 //                    finalObject.put("accel specs",accel_Data);
@@ -351,10 +376,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //finalObject.put("gyro",dataGyro);
                     //finalObject.put("mag",dataMag);
                     //finalObject.put("rot",dataRot);
-                    finalObject.put("rotDeg",dataRotDeg);
+                    finalObject.put("rotDeg", dataRotDeg);
                     //finalObject.put("orientation",dataOrientation);
 
-                    JsonManagement.test(path,cal.getTime().toString().replaceAll(" ",""), finalObject);
+                    JsonManagement.test(path, cal.getTime().toString().replaceAll(" ", ""), finalObject);
 
                     //dataAccel = new JSONArray();
                     //dataGyro = new JSONArray();
@@ -371,11 +396,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
     }
+
     /**
-     * @param result the array of Euler angles in the order: yaw, roll, pitch
+     * @param result    the array of Euler angles in the order: yaw, roll, pitch
      * @param rotVector the rotation vector
      */
-    public void calculateAngles(float[] result, float[] rotVector){
+    public void calculateAngles(float[] result, float[] rotVector) {
         //caculate rotation matrix from rotation vector first
         SensorManager.getRotationMatrixFromVector(rMatrix, rotVector);
 
@@ -386,8 +412,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         convertToDegrees(result);
     }
 
-    private void convertToDegrees(float[] vector){
-        for (int i = 0; i < vector.length; i++){
+    private void convertToDegrees(float[] vector) {
+        for (int i = 0; i < vector.length; i++) {
             vector[i] = (float) Math.toDegrees(vector[i]);
         }
     }
