@@ -98,8 +98,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String date = formatter.format(cal.getTime());
             calReference.setTimeInMillis(currentTimeMillis()-timeReference);
             String time = formatter1.format(calReference.getTime());
-            System.out.println(time);
-            txt_Timer.setText(time);
+            //System.out.println(time.substring(3));
+            txt_Timer.setText(time.substring(3));
 
 
             //JSONObject data = new JSONObject();
