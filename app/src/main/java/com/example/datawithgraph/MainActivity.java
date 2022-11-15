@@ -18,6 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 
+import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.Viewport;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
@@ -33,7 +34,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX, txt_Azimuth, txt_Pitch, txt_Roll, txt_Yaw, txt_Pitch2, txt_Roll2 , txt_Display;
+    TextView txt_AccelZ, txt_AccelY, txt_AccelX, txt_GyroZ, txt_GyroY, txt_GyroX, txt_MagZ, txt_MagY, txt_MagX, txt_Azimuth, txt_Pitch, txt_Roll, txt_Yaw, txt_Pitch2, txt_Roll2 , txt_Display, txt_Timer;
 
     //sensor variables
     private SensorManager mSensorManager;
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String accel_Data, gyro_Data, mag_Data, rot_data, orientation_data;
 
     private float display = 0, act = 0, prev = -1;
+    private float threshold=20;
 
 
     JSONArray dataGyro, dataAccel, dataMag, dataRot, dataOrientation, dataRotDeg;
@@ -69,26 +71,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean recordMode = false;
 
     LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[]{
-            new DataPoint(0, 1),
-            new DataPoint(1, 5),
-            new DataPoint(2, 3),
-            new DataPoint(3, 2),
-            new DataPoint(4, 6)
+            new DataPoint(0, 0),
     });
 
     int i = 0;
 
     private Calendar cal = Calendar.getInstance(Locale.ENGLISH);
+    private Calendar calReference = Calendar.getInstance(Locale.ENGLISH);
     private String dateFormat = "yyyy-MM-dd HH:mm:ss.SSS ";
+    private String timeFormat = "HH:mm:ss.SSS";
     private SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
+    private SimpleDateFormat formatter1 = new SimpleDateFormat(timeFormat);
     private static final DecimalFormat df = new DecimalFormat("0.00");
+    int originalTime =  -1;
+    long timeReference;
 
     private SensorEventListener sensorEventListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             if (!recordMode) return;
+            if(originalTime == -1) {
+                timeReference = currentTimeMillis();
+                originalTime = 0;
+            }
             cal.setTimeInMillis(currentTimeMillis());
             String date = formatter.format(cal.getTime());
+            calReference.setTimeInMillis(currentTimeMillis()-timeReference);
+            String time = formatter1.format(calReference.getTime());
+            System.out.println(time);
+            txt_Timer.setText(time);
+
+
             //JSONObject data = new JSONObject();
             JSONObject data1 = new JSONObject();
 
@@ -99,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println(date + "gyro y = " + gyro[1]);
                 System.out.println(date + "gyro z = " + gyro[2]);
 
-*//*                txt_GyroX.setText("x = " + df.format(gyro[0]));
+*//*            txt_GyroX.setText("x = " + df.format(gyro[0]));
                 txt_GyroY.setText("y = " + df.format(gyro[1]));
                 txt_GyroZ.setText("z = " + df.format(gyro[2]));*//*
 
@@ -177,9 +190,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println("prev : " + prev);
 
 
-                if (prev < 5 && act > 355) {
+                if (prev < threshold && act > (360 - threshold)) {
                     display -= 360 - act + prev;
-                } else if (prev > 355 && act < 5) {
+                } else if (prev > (360 - threshold) && act < threshold) {
                     display += 360 - prev + act;
                 } else {
                     display += act - prev;
@@ -189,8 +202,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 prev = act;
 
                 txt_Yaw.setText("Yaw = " + df.format(rotVecDeg[0]));
-                txt_Roll2.setText("Pitch = " + df.format(rotVecDeg[1]));
-                txt_Pitch2.setText("Roll = " + df.format(rotVecDeg[2]));
                 txt_Display.setText("Delta = " + df.format(display));
 
                 /*try {
@@ -253,17 +264,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //            txt_Accel.setText("Acceleration change = " + (int)changeInAcceleration);
 //
 //            prog_shakeMeter.setProgress((int)changeInAcceleration);
-//            //update graph
-//            pointsPlotted++;
-//
-////            if(pointsPlotted >= 1000){
-////                pointsPlotted = 1;
-////                series.resetData(new DataPoint[] {new DataPoint(1,0)});
-////            }
-//
-//            series.appendData( new DataPoint(pointsPlotted, changeInAcceleration), true, pointsPlotted );
-//            viewport.setMaxX(pointsPlotted);
-//            viewport.setMinX(pointsPlotted-200);
+            //update graph
+            pointsPlotted++;
+
+            //if(pointsPlotted >= 1000){
+            //    pointsPlotted = 1;
+            //    series.resetData(new DataPoint[] {new DataPoint(1,0)});
+            //}
+
+            series.appendData( new DataPoint(pointsPlotted, display), true, pointsPlotted );
+            viewport.setMaxX(pointsPlotted);
+            viewport.setMinX(pointsPlotted-1000);
         }
 
         @Override
@@ -302,9 +313,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        txt_Roll = findViewById(R.id.txt_Roll);
 
         txt_Yaw = findViewById(R.id.txt_Yaw);
-        txt_Pitch2 = findViewById(R.id.txt_Pitch2);
-        txt_Roll2 = findViewById(R.id.txt_Roll2);
         txt_Display = findViewById(R.id.txt_Display);
+        txt_Timer = findViewById(R.id.txt_Timer);
 
         //initialize sensor data
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -340,11 +350,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         //sample graph code
-//        GraphView graph = (GraphView) findViewById(R.id.graph);
-//        viewport = graph.getViewport();
-//        viewport.setScrollable(true);
-//        viewport.setXAxisBoundsManual(true);
-//        graph.addSeries(series);
+        GraphView graph = (GraphView) findViewById(R.id.graph);
+        viewport = graph.getViewport();
+        viewport.setScrollable(true);
+        viewport.setXAxisBoundsManual(true);
+        graph.addSeries(series);
 
     }
 
@@ -386,6 +396,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //dataMag = new JSONArray();
                     //dataRot = new JSONArray();
                     dataRotDeg = new JSONArray();
+                    display = 0;
+                    act = 0;
+                    prev = -1;
+                    originalTime = -1;
+
                     //dataOrientation = new JSONArray();
 
                 } catch (Exception e) {
