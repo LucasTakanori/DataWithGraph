@@ -15,21 +15,20 @@ import java.io.IOException;
 
 
 public class JsonManagement {
- public static void test(String path, String name, JSONObject data) throws Exception {
-     // Serialization
 
-//     Gson gson = new Gson();
-//     String json = gson.toJson(data);
-//     System.out.println(json);
-     // ==> json is {"value1":1,"value2":"abc"}
-
+    //Function gets app path, File name and data, saves into new file in mobile storage.
+ public static void storeData(String path, String name, JSONObject data) throws Exception {
 
      File file = new File(path, name);
      System.out.println(path);
+
+
      FileOutputStream outputStream = new FileOutputStream(file);
 
      try {
          outputStream = new FileOutputStream((file));
+
+         // Create new file in path
          if (!file.exists()) {
              file.createNewFile();
          }
@@ -37,6 +36,7 @@ public class JsonManagement {
          // get the content in bytes
          byte[] contentInBytes = data.toString().getBytes();
 
+         //Write byte content to file and close file
          outputStream.write(contentInBytes);
          outputStream.flush();
          outputStream.close();
